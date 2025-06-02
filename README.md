@@ -3,7 +3,7 @@ An r-adaptive finite element method using neural networks for parametric self-ad
 
 [link paper arxiv](https://arxiv.org/abs/2504.21160)
 
-# Dependecies
+# Dependencies
 - python==3.12
 - numpy
 - pandas
