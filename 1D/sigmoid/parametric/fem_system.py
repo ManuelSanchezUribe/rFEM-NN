@@ -29,8 +29,6 @@ def element_stiffness(h):
 @jit
 def element_load_exact(coords, alpha, s):
     x1, x2 = coords
-    problem_test = Problem(alpha, s)
-    f = problem_test.f
 
     h = x2 - x1
     # 1. integrate f(x)*lambda1(x), x=x1..x2; lambda1(x) = (x2-x)/(x2-x1)
@@ -49,8 +47,6 @@ def assemble_CSR(n_elements, node_coords, element_length, n_nodes, alpha, s):
     element_nodes = jnp.stack((jnp.arange(0, n_elements), jnp.arange(1, n_elements+1)), axis=1) 
     coords        = node_coords[element_nodes]
     h_values      = element_length
-    lenval        = 3*(n_nodes-2) + 4
-    values        = jnp.zeros((lenval))
 
     def element_load_trick(coord):
         return element_load_exact(coord, alpha, s)
