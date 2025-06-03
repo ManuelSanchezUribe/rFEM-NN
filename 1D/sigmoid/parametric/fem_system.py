@@ -1,9 +1,12 @@
-########################################################################################
-# Workshop: Coding for PDEs with Neural Networks
-# Date: 2025-24-01
-# Author: Danilo Aballay, Vicente Iligaray, Ignacio Tapia y Manuel Sánchez
-########################################################################################
+###################################################################################################
+# An r-adaptive finite element method using Neural Networks for parametric self-adjoint
+# elliptic problems.
+# Date: 2025-02-06
+# Author: Danilo Aballay, Federico Fuentes, Vicente Iligaray, Ignacio Tapia y Manuel Sánchez
+###################################################################################################
 
+
+# Falta añadir descripciones
 import jax
 import jax.numpy as jnp
 from jax import jit

@@ -1,8 +1,9 @@
-########################################################################################
-# Workshop: Coding for PDEs with Neural Networks
-# Date: 2025-24-01
-# Author: Danilo Aballay, Vicente Iligaray, Ignacio Tapia y Manuel Sánchez
-########################################################################################
+###################################################################################################
+# An r-adaptive finite element method using Neural Networks for parametric self-adjoint
+# elliptic problems.
+# Date: 2025-02-06
+# Author: Danilo Aballay, Federico Fuentes, Vicente Iligaray, Ignacio Tapia y Manuel Sánchez
+###################################################################################################
 
 import jax
 import jax.numpy as jnp
@@ -17,10 +18,16 @@ from CSR_functions import create_COO, to_csr
 
 @jax.jit
 def element_stiffness(h):
+    '''
+    Computes the exact element stiffness matrix.
+    '''
     return jnp.array([[1, -1], [-1, 1]]) / h
 
 @jax.jit
 def element_load_exact(coords):
+    '''
+    Analytical integration routine to compute element load vector.
+    '''
     x1, x2 = coords
     problem_test = Problem()
     alpha = problem_test.alpha
