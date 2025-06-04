@@ -1,4 +1,13 @@
+#########################################################################################################
+# An r-adaptive finite element method using neural networks for parametric self-adjoint elliptic problems
+# Author: Danilo Aballay, Federico Fuentes, Vicente Iligaray, Ángel J. Omella,
+#         David Pardo, Manuel A. Sánchez, Ignacio Tapia, Carlos Uriarte
+#########################################################################################################
+
 import jax.numpy as jnp
+import numpy as np
+np.random.seed(40)
+
 class Problem:
     def __init__(self, alpha, s):
         """

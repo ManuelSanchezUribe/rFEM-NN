@@ -42,8 +42,10 @@ class special_layer(keras.layers.Layer):
 
     def call(self, inputs):
         distances = jax.nn.softmax(jnp.array(self.mobile_interior_vertices))
-        nodes = jnp.cumsum(distances)
-        return jnp.insert(nodes, 0, 0)
+        nodes     = jnp.cumsum(distances)
+        nodes_with_fixed_point = jnp.insert(nodes, 0, 0.5)
+        nodes_with_fixed_point = jnp.insert(nodes_with_fixed_point, 0, 0)
+        return nodes_with_fixed_point.sort()
 
 def make_model(n_nodes, dimension=1, w_interior_initial_values=None):
     L = special_layer(n_nodes, dimension, w_interior_initial_values)
@@ -124,7 +126,9 @@ def tricky_loss(y_pred, y_true):
 
 # Adatative learning rate
 def lr_schedule(epoch, lr):
-    if epoch >= 5000:
-        return 1e-3
+    if epoch % 5000 == 0 and epoch != 0:
+        return lr / 10
     return lr
+
+  
   

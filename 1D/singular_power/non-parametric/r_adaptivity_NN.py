@@ -125,6 +125,7 @@ def tricky_loss(y_pred, y_true):
 # Adatative learning rate
 def lr_schedule(epoch, lr):
     if epoch >= 5000:
-        return 1e-3
+        return lr/10
     return lr
+  
   

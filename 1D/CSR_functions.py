@@ -1,3 +1,10 @@
+#########################################################################################################
+# An r-adaptive finite element method using neural networks for parametric self-adjoint elliptic problems
+# Author: Danilo Aballay, Federico Fuentes, Vicente Iligaray, Ángel J. Omella,
+#         David Pardo, Manuel A. Sánchez, Ignacio Tapia, Carlos Uriarte
+#########################################################################################################
+
+
 import jax.numpy as jnp
 from jax import jit
 import jax.experimental.sparse as sparse
@@ -7,6 +14,7 @@ from jax.ops import segment_sum
 
 @jit
 def create_COO(elements, ke_values):
+    '''Create a COO sparse matrix from elements and ke_values.'''
     NE       = elements.shape[0]
     dof_mat  = jnp.tile(elements[:, None, :], (1, 2, 1))
     dof_rows = dof_mat.reshape(NE, -1, order='C')
@@ -22,6 +30,7 @@ def create_COO(elements, ke_values):
 
 @partial(jit, static_argnames=['n_removes', 'n_init_rows'])
 def to_csr(COO, n_removes, n_init_rows):
+    """Convert a COO sparse matrix to CSR format, removing specified elements."""
     row     = COO.row
     col     = COO.col
     data    = COO.data
@@ -53,6 +62,7 @@ def to_csr(COO, n_removes, n_init_rows):
 
 @partial(jit, static_argnames=['n_removes', 'n_init_rows'])
 def to_Bcsr(COO, n_removes, n_init_rows):
+    """Convert a COO sparse matrix to BCSR format, removing specified elements."""
     row     = COO.row
     col     = COO.col
     data    = COO.data

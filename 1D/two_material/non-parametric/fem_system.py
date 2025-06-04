@@ -16,29 +16,36 @@ sys.path.append(os.path.abspath('../..'))
 from CSR_functions import create_COO, to_csr
 
 @jax.jit
-def element_stiffness(h):
+def element_stiffness(coords):
     ''' Computes the exact element stiffness matrix.'''
-    return jnp.array([[1, -1], [-1, 1]]) / h
+    x1, x2 = coords
+    h      = x2 - x1
+    midpt  = (x2 + x1) / 2
+    problem_test = Problem()
+    sigma = problem_test.sigma
+    k     = 1e32
+    x_sigma = problem_test.x_sigma
+    sigma_c = sigma[1] * jax.nn.sigmoid(k * (midpt - x_sigma)) + sigma[0] * (1 - jax.nn.sigmoid(k * (midpt - x_sigma)))
+    return sigma_c * jnp.array([[1, -1], [-1, 1]]) / h
 
 @jax.jit
 def element_load_exact(coords):
     '''Analytical integration routine to compute element load vector.'''
     x1, x2 = coords
-    problem_test = Problem()
-    alpha = problem_test.alpha
-    s     = problem_test.s
 
     h = x2 - x1
     # 1. integrate f(x)*lambda1(x), x=x1..x2; lambda1(x) = (x2-x)/(x2-x1)
-    u1 = alpha*(x1-s); u2 = alpha*(x2-s)
-    b_1 = (-1.0/h)*( (jnp.arctan(u2) - u2/(u2**2+1)) - (jnp.arctan(u1) - u1/(u1**2+1)))
-    b_1 += (-alpha/h)*(x2-s)*( 1/(u2**2+1) - (1/(u1**2+1)))
+    b_1 = (-2*jnp.pi*x2/h)*(jnp.cos(2*jnp.pi*x2) - jnp.cos(2*jnp.pi*x1) )
+    b_1 += (2*jnp.pi/h)*( x2*jnp.cos(2*jnp.pi*x2) - x1*jnp.cos(2*jnp.pi*x1) )
+    b_1 += (-1/h)*( jnp.sin(2*jnp.pi*x2) - jnp.sin(2*jnp.pi*x1) )
 
     # 2. integrate f(x)*lambda2(x), x=x1..x2; lambda2(x) = (x1-x)/(x2-x1)
-    b_2 = (1.0/h)*( (jnp.arctan(u2) - u2/(u2**2+1)) - (jnp.arctan(u1) - u1/(u1**2+1)))
-    b_2 += (-alpha/h)*(s-x1)*( 1/(u2**2+1) - (1/(u1**2+1)))
+    b_2 = (-2*jnp.pi/h)*( x2*jnp.cos(2*jnp.pi*x2) - x1*jnp.cos(2*jnp.pi*x1) )
+    b_2 += (1/h)*( jnp.sin(2*jnp.pi*x2) - jnp.sin(2*jnp.pi*x1) )
+    b_2 += (2*jnp.pi*x1/h)*(jnp.cos(2*jnp.pi*x2) - jnp.cos(2*jnp.pi*x1) )
     
     return jnp.array([b_1, b_2])
+
 
 @partial(jax.jit, static_argnames=['n_elements', 'n_nodes'])
 def assemble_CSR(n_elements, node_coords, element_length, n_nodes):
@@ -48,7 +55,7 @@ def assemble_CSR(n_elements, node_coords, element_length, n_nodes):
     h_values      = element_length
     
     fe_values = jax.vmap(element_load_exact)(coords)
-    ke_values = jax.vmap(element_stiffness)(h_values)
+    ke_values = jax.vmap(element_stiffness)(coords)
 
     # Create COO matrix
     COO = create_COO(element_nodes, ke_values)
@@ -62,6 +69,7 @@ def assemble_CSR(n_elements, node_coords, element_length, n_nodes):
 
     return K, F
 
+
 # Apply boundary conditions
 @jax.jit
 def apply_boundary_conditions(K, F):
@@ -71,7 +79,7 @@ def apply_boundary_conditions(K, F):
     bc_g1        = problem_test.g1
 
     F = F.at[0].set(bc_g0)
-    F = F.at[-1].add(bc_g1)
+    F = F.at[-1].set(F[-1] + 2*jnp.pi)
 
     return K, F
 
