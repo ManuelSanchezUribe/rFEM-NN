@@ -7,7 +7,7 @@ def gaussian_quadrature(n):
 
 class Integration_info:
     def __init__(self):
-        number_of_points = 9
+        number_of_points = 50
         nodes_int, weights_int = gaussian_quadrature(number_of_points)
 
         phi0 = lambda x, y: 0.25*(1-x)*(1-y)
