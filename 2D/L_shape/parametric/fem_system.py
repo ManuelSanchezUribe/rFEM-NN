@@ -62,6 +62,8 @@ def element_stiffness(coords, dir, dir_val, sigma):
     y_sigma = problem_test.y_sigma
     sigma_c = (sigma[3] * 0.5*(jnp.sign(midpty-y_sigma)+1) + sigma[2] * 0.5*(jnp.sign(-midpty+y_sigma)+1)) * 0.5*(jnp.sign(midptx-x_sigma)+1) 
     sigma_c += (sigma[1] * 0.5*(jnp.sign(midpty-y_sigma)+1) + sigma[0] * 0.5*(jnp.sign(-midpty+y_sigma)+1)) * 0.5*(jnp.sign(-midptx+x_sigma)+1) 
+
+    # Explicarnos de manera bonita
     
     array_x = jnp.array([[2, -2, -1, 1, 0],
                         [-2, 2, 1, -1, 0],
