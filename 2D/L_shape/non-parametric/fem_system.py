@@ -44,6 +44,7 @@ def generate_mesh(nx, ny, x, y):
 @jit
 def element_stiffness(coords, dir, dir_val):
     ''' Computes the exact element stiffness matrix with Dirichlet boundary conditions.'''
+    # see build_system for the definition of dir and dir_val
     x1, y1, x2, y2 = coords
     hx, hy = x2 - x1, y2 - y1
 
@@ -53,10 +54,11 @@ def element_stiffness(coords, dir, dir_val):
     sigma = problem_test.sigma 
     x_sigma = problem_test.x_sigma
     y_sigma = problem_test.y_sigma
+    # Obtain material properties with sign functions to identify current quadrant
     sigma_c = (sigma[3] * 0.5*(jnp.sign(midpty-y_sigma)+1) + sigma[2] * 0.5*(jnp.sign(-midpty+y_sigma)+1)) * 0.5*(jnp.sign(midptx-x_sigma)+1) 
     sigma_c += (sigma[1] * 0.5*(jnp.sign(midpty-y_sigma)+1) + sigma[0] * 0.5*(jnp.sign(-midpty+y_sigma)+1)) * 0.5*(jnp.sign(-midptx+x_sigma)+1) 
     
-
+    # Compute the stiffness matrix, adding an auxiliary row and column
     array_x = jnp.array([[2, -2, -1, 1, 0],
                         [-2, 2, 1, -1, 0],
                         [-1, 1, 2, -2, 0],
@@ -70,15 +72,19 @@ def element_stiffness(coords, dir, dir_val):
     
     array_x *= sigma_c
 
+    # Obtain local nodes that are not Dirichlet and compute the correction
     nodir = jnp.setdiff1d(jnp.array([0, 1, 2, 3]), dir, size=4, fill_value=4)
     dir_cumsum = array_x[nodir,:][:,dir] @ dir_val
     dir_correction = jnp.zeros(5, dtype=jnp.float64)
     dir_correction = dir_correction.at[nodir].set(dir_cumsum)
 
+    # Apply Dirichlet boundary conditions, setting the corresponding rows and columns to zero
+    # Nodes that are not Dirichlet only modify the auxiliary row and column
     array_x = array_x.at[dir,:].set(0)
     array_x = array_x.at[:,dir].set(0)
     array_x = array_x.at[dir,dir].set(1)
     
+    # Return stiffness matrix and correction vector without auxiliary row and column
     return array_x[0:4,0:4], dir_correction[0:4]
 
 @jit
@@ -151,7 +157,7 @@ def element_dirichlet(element, dirichlet_nodes):
 @jit
 def build_system(nodes):
     '''Builds the finite element system for the given nodes.'''
-
+    
     nx = nodes.shape[0]//2
     ny = nx
     x = nodes[:nx]
@@ -159,17 +165,20 @@ def build_system(nodes):
 
     node_coords, elements = generate_mesh(nx, ny, x, y)
 
+    # Create a mask for Dirichlet nodes
     mask_dirichlet = jax.vmap(is_zero_quadrant, in_axes=(0,0))(node_coords[:,0], node_coords[:,1])
     mask_dirichlet = mask_dirichlet.at[0:nx].set(1)
     mask_dirichlet = mask_dirichlet.at[nx*(ny-1)+0:nx*(ny-1)+nx].set(1)
     mask_dirichlet = mask_dirichlet.at[0:nx*(ny-1)+1:nx].set(1)
     mask_dirichlet = mask_dirichlet.at[nx-1:nx*ny:nx].set(1)
 
+    # Identify Dirichlet nodes, the ones that are not are set to nx*ny
     dirichlet_nodes = jnp.where(mask_dirichlet == 1, size=nx*ny, fill_value=nx*ny)[0]
 
     def element_dirichlet_trick(element):
         return element_dirichlet(element, dirichlet_nodes)
     
+    # Obtain local Dirichlet nodes for each element, the ones that are not are set to 4
     dir_elements = jax.vmap(element_dirichlet_trick)(elements)
 
     dir_values = jnp.zeros(elements.shape, dtype=jnp.float64)
